@@ -1,0 +1,38 @@
+world_name: four_agents
+
+scenery:
+  - uri: model://runway
+    pose_degrees: "-29 545 0 0 0 363"
+
+agents:
+  - id: R0
+    type: rover
+    role: pursuer
+    instance: 0
+    spawn:
+      xyz: [0.0, 0.0, 0.15]
+      rpy_degrees: [0.0, 0.0, 90.0]
+
+  - id: R1
+    type: rover
+    role: evader
+    instance: 1
+    spawn:
+      xyz: [5.0, 0.0, 0.15]
+      rpy_degrees: [0.0, 0.0, 90.0]
+
+  - id: Q0
+    type: quad
+    role: pursuer
+    instance: 2
+    spawn:
+      xyz: [10.0, 0.0, 0.195]
+      rpy_degrees: [0.0, 0.0, 90.0]
+
+  - id: P0
+    type: plane
+    role: evader
+    instance: 3
+    spawn:
+      xyz: [15.0, 0.0, 0.422]
+      rpy_degrees: [-90.0, 0.0, 180.0]

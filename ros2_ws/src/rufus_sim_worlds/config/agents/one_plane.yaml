@@ -1,0 +1,14 @@
+world_name: one_plane
+
+scenery:
+  - uri: model://runway
+    pose_degrees: "-29 545 0 0 0 363"
+
+agents:
+  - id: P0
+    type: plane
+    role: pursuer
+    instance: 0
+    spawn:
+      xyz: [0.0, 0.0, 0.422]
+      rpy_degrees: [-90.0, 0.0, 180.0]

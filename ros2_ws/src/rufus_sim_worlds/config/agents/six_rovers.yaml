@@ -1,0 +1,54 @@
+world_name: six_rovers
+
+scenery:
+  - uri: model://runway
+    pose_degrees: "-29 545 0 0 0 363"
+
+agents:
+  - id: P0
+    type: rover
+    role: pursuer
+    instance: 0
+    spawn:
+      xyz: [0.0, 0.0, 0.15]
+      rpy_degrees: [0.0, 0.0, 90.0]
+
+  - id: P1
+    type: rover
+    role: pursuer
+    instance: 1
+    spawn:
+      xyz: [5.0, 0.0, 0.15]
+      rpy_degrees: [0.0, 0.0, 90.0]
+
+  - id: P2
+    type: rover
+    role: pursuer
+    instance: 2
+    spawn:
+      xyz: [10.0, 0.0, 0.15]
+      rpy_degrees: [0.0, 0.0, 90.0]
+
+  - id: E0
+    type: rover
+    role: evader
+    instance: 3
+    spawn:
+      xyz: [0.0, 5.0, 0.15]
+      rpy_degrees: [0.0, 0.0, 90.0]
+
+  - id: E1
+    type: rover
+    role: evader
+    instance: 4
+    spawn:
+      xyz: [5.0, 5.0, 0.15]
+      rpy_degrees: [0.0, 0.0, 90.0]
+
+  - id: E2
+    type: rover
+    role: evader
+    instance: 5
+    spawn:
+      xyz: [10.0, 5.0, 0.15]
+      rpy_degrees: [0.0, 0.0, 90.0]

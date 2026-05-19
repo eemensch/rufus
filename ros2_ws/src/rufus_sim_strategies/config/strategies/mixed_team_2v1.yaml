@@ -1,0 +1,71 @@
+schema_version: 1
+name: mixed_team_2v1
+description: |
+  Mixed-team 2v1 in the four_agents world. R0 (rover pursuer)
+  and Q0 (quad pursuer) chase R1 (rover evader). P0 (plane) is
+  a bystander — listed in the agents block with `ready_when`
+  but without a `strategy:`, so the runner does not spawn a
+  strategy_runner for it; the FCU loiters in GUIDED.
+
+  Capture predicate uses v2 disjunction: ground capture by R0
+  OR aerial-to-ground capture by Q0 within a 7 m sphere
+  (Q0 hovers at ~5 m so 3D distance is ≥5 m even at horizontal
+  alignment; the 7 m radius gives a small descent margin).
+
+manifest: package://rufus_sim_worlds/config/agents/four_agents.yaml
+
+agents:
+  R0:
+    role: pursuer
+    strategy:
+      type: pure_pursuit_pursuer
+      params:
+        target: R1
+        v_factor: 1.0
+        k_psi: 2.0
+  R1:
+    role: evader
+    parameters:
+      high_level:
+        v_max: 0.6
+    strategy:
+      type: constant_bearing_evader
+      params:
+        threat: R0
+        k_psi: 2.0
+  Q0:
+    role: pursuer
+    ready_when:
+      expr: "Q0.z > 4.0"
+      dwell_s: 0.0
+    strategy:
+      type: pure_pursuit_pursuer
+      params:
+        target: R1
+        v_factor: 1.0
+        k_pos: 0.7
+        k_psi: 1.5
+  P0:
+    role: neutral
+    ready_when:
+      expr: "P0.z > 30.0"
+      dwell_s: 0.0
+    # No `strategy:` block — P0 sits in GUIDED loiter for the
+    # whole episode. Strategies only spawn for agents that
+    # explicitly opt in.
+
+duration_s: 120.0
+
+termination:
+  - id: capture
+    expr: >
+      ((R0.x - R1.x)**2 + (R0.y - R1.y)**2 < 0.5**2) |
+      ((Q0.x - R1.x)**2 + (Q0.y - R1.y)**2 +
+       (Q0.z - R1.z)**2 < 7.0**2)
+    dwell_s: 0.0
+    outcome: pursuer_win
+
+  - id: evader_escape
+    expr: "R1.x**2 + R1.y**2 > 50**2"
+    dwell_s: 0.0
+    outcome: evader_win

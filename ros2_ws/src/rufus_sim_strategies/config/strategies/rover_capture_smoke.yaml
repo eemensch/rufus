@@ -1,0 +1,41 @@
+schema_version: 1
+name: rover_capture_smoke
+description: |
+  Short-duration variant of rover_capture_pp_vs_cb, used by the
+  Stage 8 evaluation smoke. Same strategies and termination
+  predicates; duration_s slashed from 90 to 30 so a 4-run sweep
+  stays under 10 min wallclock.
+
+manifest: package://rufus_sim_worlds/config/agents/two_rovers.yaml
+
+agents:
+  R0:
+    role: pursuer
+    strategy:
+      type: pure_pursuit_pursuer
+      params:
+        target: R1
+        v_factor: 1.0
+        k_psi: 2.0
+  R1:
+    role: evader
+    strategy:
+      type: constant_bearing_evader
+      params:
+        threat: R0
+        v_factor: 0.95
+        bearing_offset: 3.14159265358979
+        k_psi: 2.0
+
+duration_s: 30.0
+
+termination:
+  - id: capture
+    expr: "(R0.x - R1.x)**2 + (R0.y - R1.y)**2 < 0.5**2"
+    dwell_s: 0.5
+    outcome: pursuer_win
+
+  - id: evader_escape
+    expr: "R1.x**2 + R1.y**2 > 50**2"
+    dwell_s: 0.0
+    outcome: evader_win

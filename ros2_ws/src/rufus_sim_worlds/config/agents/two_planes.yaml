@@ -1,0 +1,22 @@
+world_name: two_planes
+
+scenery:
+  - uri: model://runway
+    pose_degrees: "-29 545 0 0 0 363"
+
+agents:
+  - id: P0
+    type: plane
+    role: pursuer
+    instance: 0
+    spawn:
+      xyz: [0.0, 0.0, 0.422]
+      rpy_degrees: [-90.0, 0.0, 180.0]
+
+  - id: P1
+    type: plane
+    role: evader
+    instance: 1
+    spawn:
+      xyz: [50.0, 0.0, 0.422]
+      rpy_degrees: [-90.0, 0.0, 180.0]

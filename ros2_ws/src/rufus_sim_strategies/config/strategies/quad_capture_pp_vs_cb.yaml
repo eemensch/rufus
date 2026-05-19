@@ -1,0 +1,51 @@
+schema_version: 1
+name: quad_capture_pp_vs_cb
+description: |
+  Q0 (pursuer) runs PurePursuitPursuer targeting Q1.
+  Q1 (evader) runs ConstantBearingEvader fleeing directly away.
+  Q1's v_max is overridden lower so Q0 has a closure rate;
+  capture predicate fires when Q0 is within 1.0 m (3D) of Q1.
+
+manifest: package://rufus_sim_worlds/config/agents/two_quads.yaml
+
+agents:
+  Q0:
+    role: pursuer
+    ready_when:
+      expr: "Q0.z > 4.0"
+      dwell_s: 0.0
+    strategy:
+      type: pure_pursuit_pursuer
+      params:
+        target: Q1
+        v_factor: 1.0
+        k_psi: 1.5
+        k_pos: 0.7
+  Q1:
+    role: evader
+    ready_when:
+      expr: "Q1.z > 4.0"
+      dwell_s: 0.0
+    parameters:
+      high_level:
+        v_max: 4.0          # default WP_SPD ~10 m/s; cap to 4
+    strategy:
+      type: constant_bearing_evader
+      params:
+        threat: Q0
+        v_factor: 1.0
+        k_psi: 1.5
+        k_pos: 0.7
+
+duration_s: 90.0
+
+termination:
+  - id: capture
+    expr: "(Q0.x - Q1.x)**2 + (Q0.y - Q1.y)**2 + (Q0.z - Q1.z)**2 < 1.0**2"
+    dwell_s: 0.5
+    outcome: pursuer_win
+
+  - id: evader_escape
+    expr: "Q1.x**2 + Q1.y**2 > 100**2"
+    dwell_s: 0.0
+    outcome: evader_win

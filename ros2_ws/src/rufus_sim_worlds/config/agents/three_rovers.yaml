@@ -1,0 +1,30 @@
+world_name: three_rovers
+
+scenery:
+  - uri: model://runway
+    pose_degrees: "-29 545 0 0 0 363"
+
+agents:
+  - id: R0
+    type: rover
+    role: pursuer
+    instance: 0
+    spawn:
+      xyz: [0.0, 0.0, 0.15]
+      rpy_degrees: [0.0, 0.0, 90.0]
+
+  - id: R1
+    type: rover
+    role: pursuer
+    instance: 1
+    spawn:
+      xyz: [10.0, 0.0, 0.15]
+      rpy_degrees: [0.0, 0.0, 90.0]
+
+  - id: E0
+    type: rover
+    role: evader
+    instance: 2
+    spawn:
+      xyz: [5.0, 5.0, 0.15]
+      rpy_degrees: [0.0, 0.0, 90.0]

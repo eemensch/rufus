@@ -1,0 +1,62 @@
+schema_version: 1
+name: rover_3v3
+description: |
+  Three pursuers (P0, P1, P2) chase three evaders (E0, E1, E2).
+  Each pursuer runs PurePursuitPursuer targeting the evader at
+  the same column index (P0->E0, P1->E1, P2->E2). Each evader
+  runs ConstantBearingEvader fleeing its corresponding pursuer.
+
+  Termination predicate is the v2 disjunction over all 9
+  (pursuer, evader) capture pairs — capture by ANY pair fires
+  pursuer_win. Single big inequality so the runner gets a
+  cleaner predicate listing than 9 separate entries.
+
+manifest: package://rufus_sim_worlds/config/agents/six_rovers.yaml
+
+agents:
+  P0: { role: pursuer, strategy: { type: pure_pursuit_pursuer,
+        params: { target: E0, v_factor: 1.0, k_psi: 2.0 } } }
+  P1: { role: pursuer, strategy: { type: pure_pursuit_pursuer,
+        params: { target: E1, v_factor: 1.0, k_psi: 2.0 } } }
+  P2: { role: pursuer, strategy: { type: pure_pursuit_pursuer,
+        params: { target: E2, v_factor: 1.0, k_psi: 2.0 } } }
+  E0:
+    role: evader
+    parameters: { high_level: { v_max: 0.85 } }
+    strategy: { type: constant_bearing_evader,
+                params: { threat: P0, k_psi: 2.0 } }
+  E1:
+    role: evader
+    parameters: { high_level: { v_max: 0.85 } }
+    strategy: { type: constant_bearing_evader,
+                params: { threat: P1, k_psi: 2.0 } }
+  E2:
+    role: evader
+    parameters: { high_level: { v_max: 0.85 } }
+    strategy: { type: constant_bearing_evader,
+                params: { threat: P2, k_psi: 2.0 } }
+
+duration_s: 120.0
+
+termination:
+  - id: capture
+    expr: >
+      ((P0.x - E0.x)**2 + (P0.y - E0.y)**2 < 0.5**2) |
+      ((P0.x - E1.x)**2 + (P0.y - E1.y)**2 < 0.5**2) |
+      ((P0.x - E2.x)**2 + (P0.y - E2.y)**2 < 0.5**2) |
+      ((P1.x - E0.x)**2 + (P1.y - E0.y)**2 < 0.5**2) |
+      ((P1.x - E1.x)**2 + (P1.y - E1.y)**2 < 0.5**2) |
+      ((P1.x - E2.x)**2 + (P1.y - E2.y)**2 < 0.5**2) |
+      ((P2.x - E0.x)**2 + (P2.y - E0.y)**2 < 0.5**2) |
+      ((P2.x - E1.x)**2 + (P2.y - E1.y)**2 < 0.5**2) |
+      ((P2.x - E2.x)**2 + (P2.y - E2.y)**2 < 0.5**2)
+    dwell_s: 0.5
+    outcome: pursuer_win
+
+  - id: all_evaders_escape
+    expr: >
+      (E0.x**2 + E0.y**2 > 50**2) &
+      (E1.x**2 + E1.y**2 > 50**2) &
+      (E2.x**2 + E2.y**2 > 50**2)
+    dwell_s: 0.0
+    outcome: evader_win

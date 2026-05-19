@@ -1,0 +1,13 @@
+schema_version: 1
+name: rover_determinism_check
+# Same nominal config for all 5 runs; the only "axis" variation is
+# the seed index. Since none of the strategies use the seed for
+# anything stochastic, all 5 runs are nominally identical inputs.
+# Drift in terminal state across the 5 runs therefore measures
+# chain-level non-determinism (FastDDS scheduling jitter, gz step
+# timing, SITL clock granularity) rather than strategy variance.
+episode: package://rufus_sim_strategies/config/strategies/rover_capture_smoke.yaml
+axes: []
+seeds: 5
+speedup: 1.0
+output_dir: /tmp/pe_eval_determinism

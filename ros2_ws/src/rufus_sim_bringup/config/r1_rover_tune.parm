@@ -1,0 +1,192 @@
+# Aion R1 control-loop tune overrides.
+#
+# Chained AFTER external/SITL_Models/Gazebo/config/r1_rover.param in
+# the SITL --defaults list (see chain.py and operations.md), so any
+# value here overrides the upstream R1 tune for our pursuit-evasion
+# rover.
+#
+# This file is the project's landing zone for rover tune deltas.
+# Each value must be backed by a measurement on
+# `scripts/rover_bench.py` analysed by `rufus_sim_eval.step_response`
+# against the locked S1.4 acceptance spec (docs/plan.md S1.4).
+# The test bed is now stable: yaw rate is real (imu plugin, B1
+# fix 2026-05-18) and the body-frame setpoint reverse bug is
+# fixed, so loop tuning is meaningful. Tune conservatively: one
+# parameter per iteration, step <= ~1.3x, revert any net
+# regression vs the recorded baseline.
+
+# --- Velocity ceiling
+# The Aion R1 hardware tops out higher than 1.0 m/s; the upstream
+# WP_SPEED is conservative for autonomous waypoint missions. Raise
+# to 2.0 so strategies and the rover_bench have headroom; the
+# rover_adapter reads this parameter at bring-up and sets
+# Capability.v_max from it.
+WP_SPEED          2.000000
+
+# --- Steering-rate loop damping (S1.4 iteration 1, 2026-05-18)
+# Re-baseline step_wz (cmd 1.0 rad/s) on the fixed body-frame
+# setpoint: rise 0.48 s and ss_error 0.043 already pass, but
+# overshoot 60.8% (hard guardrail <=15%) and settling 6.60 s
+# (goal <=1.0 s) — grossly under-damped, feedforward-dominated
+# (upstream ATC_STR_RAT_FF=0.446, D=0.010). Feedforward-first
+# per the locked method: cut FF ~26% to curb the overshoot
+# before touching P/I or D. Keep only if overshoot drops with
+# no regression on step_vx / circle / lemniscate / sin_vx;
+# revert otherwise.
+# RE-ACTIVATED for BC3 (2026-05-18): objective reframed to
+# settling-first at the accepted ~30% overshoot. BC3 resets to
+# this clean iter-1 base (FF=0.33: overshoot ~32.7%, ripple
+# 0.013, settling 6.24 s) and adds only the IMAX lever below.
+# The BC1/BC2 block (FF0.20/P/FLTT) is commented out.
+ATC_STR_RAT_FF    0.330000
+
+# --- Steering-rate derivative damping (S1.4 iteration 2,
+# 2026-05-18): REVERTED. ATC_STR_RAT_D 0.010->0.020 left
+# overshoot flat at 32.7%, worsened settling (6.24->6.85 s) and
+# rise (0.48->0.57 s), and amplified ripple +65% (0.0125->
+# 0.0206) — the predicted derivative-noise effect, with FLTD=2
+# Hz filtering out the useful phase lead. Net regression on the
+# primary target, so reverted to upstream (no D override here;
+# r1_rover.param ATC_STR_RAT_D=0.010 stands). The 6 s ring-down
+# is D-insensitive but FF-sensitive: next lever is the integral
+# term or the derivative filter, not more D.
+
+# --- Derivative-filter widening (S1.4 iteration 3, 2026-05-18).
+# Iter 2 showed D is real but disconnected: upstream
+# ATC_STR_RAT_FLTD=2 Hz low-passes the error derivative below
+# the overshoot dynamics, so D gain only amplified noise. This
+# step widens the derivative band 2->4 Hz (2x; conservative for
+# sensor noise) so a subsequent D increase (iter 4) can deliver
+# phase-lead damping instead of noise. Single-parameter step:
+# expected ~neutral on overshoot by itself (D is still 0.010);
+# it is the enabler, not the fix. Watch ripple/chatter — if
+# 4 Hz alone raises noise materially, dial back to 3 Hz.
+# REVERTED (see iter 4 below): FLTD widening only mattered as a
+# D enabler, and D did not pan out, so this returns to upstream
+# ATC_STR_RAT_FLTD=2.0 with no override here.
+
+# --- Steering-rate D, re-applied with the wider filter (S1.4
+# iteration 4, 2026-05-18): REVERTED. With FLTD=4, D 0.010->
+# 0.020 still left overshoot ~flat (31.8->30.4%), made step_wz
+# fail to settle in-window, slowed rise (0.47->0.54 s), and
+# pushed ripple to 0.0305 — over the <=0.03 guardrail. Tested
+# at FLTD=2 (iter 2) and FLTD=4 (iter 4): overshoot is
+# D-insensitive at every filter setting while D reliably adds
+# noise. The 32% overshoot / 6 s ring-down is not a
+# derivative-addressable mode; it is FF-sensitive and most
+# likely integral-driven (ATC_STR_RAT_I=0.223=P). Whole
+# derivative path (iter 2-4) reverted; last good state is
+# iter 1 (FF=0.330 only). Next conservative lever: reduce I.
+
+# --- Steering-rate integral reduction (S1.4 iteration 5,
+# 2026-05-18 — final conservative iteration per the locked
+# <=5/loop budget). The 32% overshoot + 6 s ring-down is
+# D-insensitive and FF-sensitive: signature of a high integral
+# term. Upstream ATC_STR_RAT_I=0.2229 (= P). Cut ~25% to
+# 0.1670 to curb integral wind-up overshoot and speed the
+# decay. Single parameter; FF kept at 0.330, D/FLTD upstream.
+# Watch ss_error (lower I weakens steady-state authority;
+# margin 0.033 -> 0.05) and the no-regression set. If this
+# does not clear the <=15% overshoot hard guardrail, the
+# method says stop and escalate to a spec decision — do NOT
+# escalate gains.
+# REVERTED: I 0.2229->0.1670 only shaved overshoot 32.7->28.5%
+# (still >> 15% hard guardrail), worsened settling (6.24->
+# 7.44 s), pushed ss_error to 0.064 (> 0.05 spec), and
+# regressed circle/lemniscate. Net regression -> upstream
+# ATC_STR_RAT_I=0.2229 stands (no override).
+#
+# === S1.4 conservative tuning budget exhausted (5/5) ===
+# Iter 1 FF 0.446->0.330 KEPT (overshoot 60.8->32.7%).
+# Iter 2 D@FLTD2, iter 3 FLTD, iter 4 D@FLTD4, iter 5 I: all
+# reverted. The speed loop passes the locked spec untuned.
+# The yaw loop's only effective lever was FF; no conservative
+# single-knob combination clears the <=15% overshoot hard
+# guardrail or the <=1.0 s settling goal. Per the locked
+# method, tuning STOPS here (do not escalate gains); the
+# residual is a spec/strategy decision recorded in
+# docs/plan.md S1.4 and CLAIMS C4. Final state: FF=0.330 only.
+
+# === Beyond-conservative retune (user-authorised 2026-05-18,
+# one-knob/no-aggression constraints lifted) ===
+# Diagnostic on iter-1 step_wz.csv: the response is NOT an
+# under-damped ring-down. It has ~0.7 s dead time, a fast rise
+# to 33% overshoot, then a slow monotone (non-oscillatory)
+# exponential settle over ~6 s. That is a dead-time + slow-pole
+# system: derivative action cannot help dead time (why every D
+# attempt failed), FF sets the unchecked open-loop drive during
+# the dead time (why FF was the only lever), and the slow tail
+# is P-deficient. BC iteration 1 attacks the mechanism, co-
+# tuned: widen the target filter to cut command lag/dead-time;
+# shift authority FF->P (less open-loop overshoot through the
+# dead time, faster closed-loop correction of the slow tail).
+# D left upstream (useless here), I left upstream (ss needs
+# it). Risk: higher P + less target filtering can ring; revert
+# the whole BC1 set if step_wz oscillates or any no-regression
+# trajectory degrades.
+# BC1 (FF0.20,P0.45,FLTT10): overshoot 32.7->16.7% (mechanism
+# confirmed — near the 15% hard guardrail), ss 0.022 ok, circle
+# 1.19->0.51, BUT ripple 0.013->0.056 (chatter, >0.03 guardrail),
+# settling 7.9 s, lemniscate 0.64->1.46. Direction right,
+# magnitude too hot: the chatter is from P doubled + FLTT=10
+# (near-unfiltered target). BC2 keeps the overshoot levers
+# (FF=0.20) and backs off the noise sources: P 0.45->0.30
+# (modest over upstream 0.223, not doubled), FLTT 10->5 (still
+# well above upstream 2 to cut dead-time lag, much less command
+# noise). Revert the BC set if ripple stays >0.03 or no-
+# regression trajectories degrade.
+# BC1/BC2 RESULT: co-tuning FF/P/FLTT drove overshoot
+# 32.7->15.0% but could not move settling (6-8 s, invariant to
+# every gain/filter tried) and traded ripple (0.034, >0.03) and
+# lemniscate. Objective reframed: settling-first at ~30%
+# overshoot. BC1/BC2 set deactivated:
+# ATC_STR_RAT_FF    0.200000
+# ATC_STR_RAT_P     0.300000
+# ATC_STR_RAT_FLTT  5.000000
+
+# --- BC3: settling-targeted, integrator-windup hypothesis
+# (2026-05-18). Settling has been invariant to FF/P/I/D/FLTT ->
+# it is not the linear controller; it is either integrator
+# windup during the ~0.7 s dead time (the integrator
+# accumulates with no plant effect, then unwinds slowly = the
+# long tail) or a plant mechanical limit. ATC_STR_RAT_IMAX is
+# the one untested discriminator and the direct fix for windup:
+# clamp it 1.0 -> 0.3 to cap dead-time accumulation. No noise
+# cost (so ripple stays at iter-1's 0.013) and no overshoot
+# suppression needed (keep the accepted ~30%). If settling
+# drops, windup was the cause and it is fixable; if settling
+# still does not move, it is a plant limit and the <=1 s goal
+# is physically unattainable on this rover (a documented
+# platform fact + a verdict on the test design). Base is the
+# re-activated iter-1 FF=0.330; D/I/P/FLTT/FLTD at upstream.
+# BC3 RESULT: IMAX 1.0->0.3 moved settling 6.24->6.36 s
+# (nothing) — windup refuted. REVERTED. Amplitude-scaling
+# diagnostic (user-directed): run step_wz at 1.0 AND 0.2 rad/s
+# at the clean iter-1 state (FF=0.330 only, IMAX upstream) to
+# separate linear/structural (amplitude-independent shape) from
+# nonlinear rate-limiting (small step cleaner). No override:
+# ATC_STR_RAT_IMAX  0.300000
+
+# === TURN_RADIUS sweep (2026-05-18, user-directed) ===
+# Root cause of the yaw-fidelity gap is the GUIDED min-turn-
+# radius model, not the rate PID. TURN_RADIUS doc: "Lower
+# values produce tighter turns in steering mode." Sweep
+# 0.9 (upstream) -> 0.3 -> 0.1 and bench with the Dubins ideal
+# matched (--r-min == this value). step_wz stays the infeasible
+# probe; arc_step (v=1, w=1, radius 1.0) is the feasibility
+# reference; step_vx is the no-regression check. Base is the
+# kept FF=0.33; all rate-PID experiments reverted.
+# REVERTED to upstream 0.9 (no override). Sweep result:
+# step_wz (pure yaw, vx=0) invariant 0.9->0.3->0.1 (~32%
+# overshoot, ~6.3 s) — TURN_RADIUS cannot rescue in-place yaw
+# because vx=0 is radius 0 < any R_min; GUIDED never pivots
+# (pivot is AUTO/AR_WPNav-only). On the feasible arc_step
+# (v=1, w=1, radius 1.0) the rover passes the <=15% overshoot
+# hard guardrail UNTUNED (13.0%, TURN_RADIUS-invariant). The
+# "yaw fidelity gap" was a step_wz (infeasible-command) test
+# artifact. S1.4 CLOSED: final rover tune = WP_SPEED + FF=0.330.
+# Lasting wins: B1 imu twist, body-frame setpoint fix,
+# Dubins-car bench ideal + arc_step. step_wz retired as an
+# infeasible probe. See docs/plan.md S1.4, CLAIMS C4/C6/C7,
+# docs/control.md (command arcs v>=|w|*R_min).
+# TURN_RADIUS       0.100000

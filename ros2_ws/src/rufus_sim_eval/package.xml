@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<?xml-model
+  href="http://download.ros.org/schema/package_format3.xsd"
+  schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>rufus_sim_eval</name>
+  <version>0.0.1</version>
+  <description>
+    Pursuit-evasion evaluation harness. Headless batch runner for
+    parameter sweeps; collects TerminationEvent and final agent
+    states across N episodes; emits a summary CSV plus
+    aggregation helpers for capture rate, time-to-capture,
+    terminal position error.
+  </description>
+  <maintainer email="iman.shames@tuta.io">Iman Shames</maintainer>
+  <license>Apache-2.0</license>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>rufus_sim_msgs</exec_depend>
+  <exec_depend>rufus_sim_game</exec_depend>
+  <exec_depend>rufus_sim_strategies</exec_depend>
+  <exec_depend>rufus_sim_bringup</exec_depend>
+  <exec_depend>rufus_sim_worlds</exec_depend>
+  <exec_depend>python3-yaml</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

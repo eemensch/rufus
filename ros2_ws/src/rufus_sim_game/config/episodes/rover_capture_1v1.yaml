@@ -1,0 +1,30 @@
+schema_version: 1
+name: rover_capture_1v1
+description: |
+  R0 chases R1 in the two_rovers world. R0 wins if it gets within
+  0.5 m of R1 and holds that for 0.5 s. R1 wins if it leaves a
+  50-m disk centred on the world origin. Otherwise the episode
+  times out at 60 s as a draw.
+
+manifest: package://rufus_sim_worlds/config/agents/two_rovers.yaml
+
+agents:
+  R0:
+    role: pursuer
+    # No initial_position / ready_when: rover starts at its spawn
+    # pose and is ready as soon as its first AgentState arrives.
+  R1:
+    role: evader
+
+duration_s: 60.0
+
+termination:
+  - id: capture
+    expr: "(R0.x - R1.x)**2 + (R0.y - R1.y)**2 < 0.5**2"
+    dwell_s: 0.5
+    outcome: pursuer_win
+
+  - id: evader_escape
+    expr: "R1.x**2 + R1.y**2 > 50**2"
+    dwell_s: 0.0
+    outcome: evader_win

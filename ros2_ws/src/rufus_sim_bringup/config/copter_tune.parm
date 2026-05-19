@@ -1,0 +1,36 @@
+# Iris (ArduCopter) tune/auditability overrides for the
+# pursuit-evasion quad. Chained AFTER
+# Tools/autotest/default_params/copter.parm in the SITL
+# --defaults list (see chain.py / the quad bench harness), so
+# values here override the stock copter tune. Mirror of
+# r1_rover_tune.parm. Each value must be backed by a
+# measurement (scripts/quad_bench.py + rufus_sim_eval.step_response)
+# or be a documented behaviour-neutral auditability fix.
+
+# --- S2.4: explicit yaw-rate cap for an auditable Capability
+# Firmware (AC_AttitudeControl RATE_Y_MAX) defaults to 0.0 =
+# "Disabled", so quad_adapter fell back to a hard-coded
+# ~90 deg/s and Capability.source could not distinguish
+# "FCU disabled" from a real value (CLAIMS C10). Set it
+# explicitly to the SAME ~90 deg/s the adapter already used:
+# behaviour-neutral (S2.1 baseline yaw was validated under the
+# effective 90 deg/s; bench step_wz commands 1.0 rad/s ~= 57
+# deg/s, below the cap, so no clamp), but Capability.source now
+# reports a real FCU value instead of a silent fallback.
+ATC_RATE_Y_MAX    90.000000
+
+# --- S2.3: no PSC tune applied (deliberate).
+# S2.1 baseline (stock copter.parm): step_wz and step_vz pass
+# the full spec with large margin; step_vx passes 4/5 (overshoot
+# 7.1%, ss 0.0007, rise 0.60, ripple 0.0017) and the only miss
+# is settling 3.54 s vs a ROVER-derived <=2.0 s — a
+# mis-transferred target. Per the Stage-1 lesson, chasing a
+# mis-transferred spec with aggressive PSC_NE_VEL_*/PSC_NE_POS_*
+# gains risks the overshoot/chatter pathology for marginal gain
+# on an already well-damped loop. The fidelity wins were
+# structural (body->world rotation, B1 imu twist), not tuning.
+# Authoritative current PSC group names (AC_PosControl.cpp,
+# verify live before any future tune): PSC_NE_VEL_*,
+# PSC_NE_POS_*, PSC_D_VEL_*, PSC_D_POS_*  (the NE/D convention
+# IS the post-4.7 naming; PSC_VELXY_*/PSC_VELZ_* were the old
+# pre-rename names).

@@ -1,0 +1,45 @@
+# Minimal MAVROS plugin allowlist for the pursuit-evasion chain.
+#
+# Each `mavros_node` instance starts ~40 plugins by default; under
+# the 4-agent demo (4 MAVROSes + 4 SITL + gz on a 14-core host),
+# default-loaded plugins like `mission`, `geofence`, `gimbal_*`,
+# and `vision_*` push the host into 2-3x CPU oversubscription
+# even though our adapters never use them. The allowlist below
+# keeps only what `rover_adapter`, `quad_adapter`, and
+# `fixed_wing_adapter` actually subscribe/publish/call.
+#
+# Required plugins, by adapter usage:
+#   sys_status  -> /mavros/state, /mavros/set_mode,
+#                  /mavros/set_stream_rate
+#   sys_time    -> /clock interaction with FCU time
+#   param       -> /mavros/param/{pull,set,get_parameters}
+#   command     -> /mavros/cmd/{arming,takeoff,command}
+#   setpoint_velocity
+#               -> /mavros/setpoint_velocity/cmd_vel(_unstamped)
+#                  (quad + fixed-wing adapters)
+#   setpoint_raw
+#               -> /mavros/setpoint_raw/local (rover adapter:
+#                  body-frame PositionTarget so ArduRover's
+#                  speed_dir tests body-forward, not NED-north —
+#                  S1.4 reverse-bug fix)
+#   local_position
+#               -> /mavros/local_position/{pose,velocity_body}
+#   imu         -> /mavros/imu/data (body-frame angular rate;
+#                  local_position/velocity_body leaves the angular
+#                  component zero, so rover_adapter sources the yaw
+#                  rate here — Stage 1 Blocker 1 / plan S1.2)
+#   rc_io       -> /mavros/rc/override (fixed-wing throttle)
+#
+# Anything not in this list is silently ignored at startup.
+/**:
+  ros__parameters:
+    plugin_allowlist:
+      - sys_status
+      - sys_time
+      - param
+      - command
+      - setpoint_velocity
+      - setpoint_raw
+      - local_position
+      - imu
+      - rc_io

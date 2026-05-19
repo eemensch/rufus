@@ -1,0 +1,58 @@
+schema_version: 1
+name: rover_2v1
+description: |
+  Two pursuers (R0, R1) chase one evader (E0). Each pursuer
+  runs PurePursuitPursuer targeting E0; the evader runs
+  ConstantBearingEvader against the nearest pursuer (a single
+  threat in the v1 strategy interface — fix is to add a
+  multi-threat evader strategy as a Stage 7 follow-up).
+
+  Termination: capture by ANY pursuer, OR evader leaves the
+  50 m disk. The capture predicate uses v2 disjunction over
+  the two (pursuer, evader) pairs.
+
+manifest: package://rufus_sim_worlds/config/agents/three_rovers.yaml
+
+agents:
+  R0:
+    role: pursuer
+    strategy:
+      type: pure_pursuit_pursuer
+      params:
+        target: E0
+        v_factor: 1.0
+        k_psi: 2.0
+  R1:
+    role: pursuer
+    strategy:
+      type: pure_pursuit_pursuer
+      params:
+        target: E0
+        v_factor: 1.0
+        k_psi: 2.0
+  E0:
+    role: evader
+    parameters:
+      high_level:
+        v_max: 0.85
+    strategy:
+      type: constant_bearing_evader
+      params:
+        threat: R0     # constant_bearing_evader takes one threat;
+                        # this is the closer of the two at start
+        k_psi: 2.0
+
+duration_s: 90.0
+
+termination:
+  - id: capture
+    expr: >
+      ((R0.x - E0.x)**2 + (R0.y - E0.y)**2 < 0.5**2) |
+      ((R1.x - E0.x)**2 + (R1.y - E0.y)**2 < 0.5**2)
+    dwell_s: 0.5
+    outcome: pursuer_win
+
+  - id: evader_escape
+    expr: "E0.x**2 + E0.y**2 > 50**2"
+    dwell_s: 0.0
+    outcome: evader_win

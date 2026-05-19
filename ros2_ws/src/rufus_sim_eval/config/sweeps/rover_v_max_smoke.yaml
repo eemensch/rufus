@@ -1,0 +1,15 @@
+schema_version: 1
+name: rover_v_max_smoke
+episode: package://rufus_sim_strategies/config/strategies/rover_capture_smoke.yaml
+axes:
+  - parameter: agents.R1.parameters.high_level.v_max
+    values: [0.6, 0.9]              # slower / faster evader
+seeds: 2
+# `speedup` is forwarded to ardurover's `--speedup`, but the
+# generated world SDFs hard-code `<real_time_factor>1.0</...>`,
+# so gz steps at wallclock pace and SITL has nothing to lock
+# step against. The runner therefore uses `duration_s` directly
+# as the wallclock budget regardless of this value. See the
+# Stage 8 follow-ups in plan.md.
+speedup: 1.0
+output_dir: /tmp/pe_eval_smoke

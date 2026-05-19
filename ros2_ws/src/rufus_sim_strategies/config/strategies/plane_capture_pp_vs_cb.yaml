@@ -1,0 +1,51 @@
+schema_version: 1
+name: plane_capture_pp_vs_cb
+description: |
+  P0 (pursuer) runs PurePursuitPursuer targeting P1.
+  P1 (evader) runs ConstantBearingEvader fleeing directly away.
+  Both planes can't hover, so capture is harder than for
+  rover/quad — the smoke test only verifies the chain runs to
+  termination cleanly, not that the pursuer wins. Default
+  outcome is timeout.
+
+manifest: package://rufus_sim_worlds/config/agents/two_planes.yaml
+
+agents:
+  P0:
+    role: pursuer
+    ready_when:
+      expr: "P0.z > 30.0"
+      dwell_s: 0.0
+    strategy:
+      type: pure_pursuit_pursuer
+      params:
+        target: P1
+        v_factor: 1.0
+        k_pos: 0.5
+  P1:
+    role: evader
+    ready_when:
+      expr: "P1.z > 30.0"
+      dwell_s: 0.0
+    parameters:
+      high_level:
+        v_max: 18.0          # slow the evader so the chase
+                              # produces some closure
+    strategy:
+      type: constant_bearing_evader
+      params:
+        threat: P0
+        v_factor: 1.0
+
+duration_s: 120.0
+
+termination:
+  - id: capture
+    expr: "(P0.x - P1.x)**2 + (P0.y - P1.y)**2 + (P0.z - P1.z)**2 < 25.0**2"
+    dwell_s: 0.0
+    outcome: pursuer_win
+
+  - id: evader_escape
+    expr: "P1.x**2 + P1.y**2 > 2000**2"
+    dwell_s: 0.0
+    outcome: evader_win

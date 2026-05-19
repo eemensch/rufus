@@ -1,0 +1,14 @@
+world_name: one_quad
+
+scenery:
+  - uri: model://runway
+    pose_degrees: "-29 545 0 0 0 363"
+
+agents:
+  - id: Q0
+    type: quad
+    role: pursuer
+    instance: 0
+    spawn:
+      xyz: [0.0, 0.0, 0.195]
+      rpy_degrees: [0.0, 0.0, 0.0]
